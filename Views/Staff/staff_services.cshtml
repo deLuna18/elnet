@@ -566,7 +566,6 @@
         let currentPage = 1;
         const itemsPerPage = 5;
 
-        // Get status text for display
         function getStatusText(status) {
             if (!status) return '';
             
@@ -580,9 +579,7 @@
             return statusMap[status.toLowerCase()] || status;
         }
 
-        // Function to bind all event listeners
         function bindEventListeners() {
-            // View Details button
             document.querySelectorAll('.action-btn.view').forEach(button => {
                 button.onclick = function() {
                     viewRequestDetails(parseInt(this.getAttribute('data-request-id')));
@@ -713,7 +710,6 @@
             }
         }
 
-        // Update table with fetched data
         function updateTable() {
             const startIndex = (currentPage - 1) * itemsPerPage;
             const endIndex = startIndex + itemsPerPage;
@@ -773,11 +769,9 @@
                 tableBody.appendChild(row);
             });
 
-            // Re-bind event listeners after table update
             bindEventListeners();
         }
 
-        // Filter requests
         function filterRequests() {
             const statusFilter = document.getElementById('statusFilter').value;
             const typeFilter = document.getElementById('typeFilter').value;
@@ -800,7 +794,6 @@
             updatePagination();
         }
 
-        // Initialize everything when the page loads
         document.addEventListener('DOMContentLoaded', function() {
             console.log('DOM Content Loaded');
             initializeTable();
@@ -860,7 +853,6 @@
             fetch('/Admin/GetAllServiceRequests')
                 .then(res => res.json())
                 .then(data => {
-                    // Render data in your table
                 });
         }
 
@@ -893,18 +885,15 @@
                 if (result.success) {
                     showNotification(`Request ${newStatus} successfully!`, 'success');
                     
-                    // Remove the request from filteredRequests if completed or rejected
                     if (newStatus === 'Completed' || newStatus === 'Rejected') {
                         filteredRequests = filteredRequests.filter(req => req.id !== parseInt(requestId));
                     } else {
-                        // Update the status in the current list
                         const request = filteredRequests.find(req => req.id === parseInt(requestId));
                         if (request) {
                             request.status = newStatus;
                         }
                     }
                     
-                    // Refresh the tables
                     updateTable();
                     await loadCompletedRequests();
                     updateQuickStats();
@@ -918,8 +907,8 @@
 
         function openAssignStaffModal(requestId) {
             document.getElementById('assignRequestId').value = requestId;
-            // Fetch staff list
-            fetch('/Admin/GetAllStaff') // You need to implement this endpoint!
+            
+            fetch('/Admin/GetAllStaff') 
                 .then(res => res.json())
                 .then(staffList => {
                     const select = document.getElementById('staffSelect');
@@ -962,7 +951,6 @@
               .then(data => {
                 alert(data.message || 'Staff added!');
                 closeModal('addStaffModal');
-                // Optionally refresh staff list
             });
         };
 
@@ -996,7 +984,6 @@
             closeUpdateStatusModal();
         });
 
-        // Load completed requests
         async function loadCompletedRequests() {
             try {
                 const response = await fetch('/Staff/GetCompletedRequests');
@@ -1024,7 +1011,6 @@
                         `;
                         tableBody.appendChild(row);
                     });
-                    // Bind edit notes buttons
                     document.querySelectorAll('.action-btn.edit-notes').forEach(btn => {
                         btn.onclick = function() {
                             openStaffNotesModal(this.getAttribute('data-request-id'));
@@ -1038,7 +1024,6 @@
             }
         }
 
-        // Calculate completion time
         function calculateCompletionTime(dateSubmitted) {
             const submittedDate = new Date(dateSubmitted);
             const completedDate = new Date();
@@ -1047,14 +1032,12 @@
             return `${diffDays} day${diffDays !== 1 ? 's' : ''}`;
         }
 
-        // Update quick stats
         function updateQuickStats() {
             const totalRequests = filteredRequests.length;
             const pendingRequests = filteredRequests.filter(r => r.status === 'Pending').length;
             const inProgressRequests = filteredRequests.filter(r => r.status === 'In Progress').length;
             const completedRequests = filteredRequests.filter(r => r.status === 'Completed').length;
 
-            // Safely update each stat if the element exists
             const updateStat = (selector, value) => {
                 const element = document.querySelector(selector);
                 if (element) {

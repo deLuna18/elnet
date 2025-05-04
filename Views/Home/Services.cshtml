@@ -536,25 +536,6 @@
             }
         });
 
-        // SAMPLE DATAA - WILL BE REPLACED WITH ACTUAL DATABASE LATER 
-        const sampleRequests = [
-            {
-                id: 'SR-001',
-                serviceType: 'Maintenance',
-                status: 'in-progress',
-                dateSubmitted: '2024-03-15',
-                description: 'Plumbing issue in the bathroom',
-                priority: 'High'
-            },
-            {
-                id: 'SR-002',
-                serviceType: 'Security',
-                status: 'pending',
-                dateSubmitted: '2024-03-16',
-                description: 'Security camera not working',
-                priority: 'Urgent'
-            }
-        ];
 
         let currentPage = 1;
         const itemsPerPage = 5;
@@ -566,7 +547,6 @@
                 const result = await response.json();
                 
                 if (result.success) {
-                    // Filter out completed and rejected requests
                     filteredRequests = result.data.filter(request => 
                         request.status.toLowerCase() !== 'completed' && 
                         request.status.toLowerCase() !== 'rejected'
@@ -581,7 +561,6 @@
             }
         }
 
-        // Update table with fetched data
         function updateTable() {
             const startIndex = (currentPage - 1) * itemsPerPage;
             const endIndex = startIndex + itemsPerPage;
@@ -659,7 +638,6 @@
             document.body.appendChild(modal);
             modal.style.display = 'block';
 
-            // Close modal when clicking outside
             modal.addEventListener('click', function(event) {
                 if (event.target === modal) {
                     modal.remove();
@@ -713,7 +691,6 @@
             document.getElementById('newRequestModal').style.display = 'none';
         }
 
-        // Handle request status updates
         async function updateRequestStatus(requestId, newStatus) {
             try {
                 const response = await fetch('/Home/UpdateRequestStatus', {
@@ -729,13 +706,11 @@
 
                 const result = await response.json();
                 if (result.success) {
-                    // Remove the request from active requests if completed or rejected
                     if (newStatus.toLowerCase() === 'completed' || newStatus.toLowerCase() === 'rejected') {
                         filteredRequests = filteredRequests.filter(req => req.id !== requestId);
                         updateTable();
                         updatePagination();
                         
-                        // Refresh completed requests table
                         await initializeCompletedTable();
                     }
                     showNotification(`Request ${newStatus} successfully!`, 'success');
@@ -981,7 +956,6 @@
             document.body.appendChild(modal);
             modal.style.display = 'block';
 
-            // Close modal when clicking outside
             modal.addEventListener('click', function(event) {
                 if (event.target === modal) {
                     modal.remove();
@@ -989,7 +963,6 @@
             });
         }
 
-        // Initialize event listeners
         document.addEventListener('DOMContentLoaded', function() {
             initializeTable();
             initializeCompletedTable();
