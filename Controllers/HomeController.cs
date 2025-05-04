@@ -244,4 +244,28 @@ public class HomeController : Controller
             return Json(new { success = false, message = "Error fetching service requests: " + ex.Message });
         }
     }
+
+    [HttpGet]
+    public async Task<IActionResult> GetCompletedRequests()
+    {
+        try
+        {
+            int? userId = HttpContext.Session.GetInt32("UserId");
+            if (userId == null)
+            {
+                return Json(new { success = false, message = "User not logged in" });
+            }
+
+            var completedRequests = await _context.Services
+                .Where(s => s.HomeownerId == userId && (s.Status == "Completed" || s.Status == "Rejected"))
+                .OrderByDescending(s => s.DateSubmitted)
+                .ToListAsync();
+
+            return Json(new { success = true, data = completedRequests });
+        }
+        catch (Exception ex)
+        {
+            return Json(new { success = false, message = "Error fetching completed requests: " + ex.Message });
+        }
+    }
 }

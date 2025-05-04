@@ -373,6 +373,7 @@
                             <th>Date Completed</th>
                             <th>Completion Time</th>
                             <th>Staff Notes</th>
+                            <th>Action</th>
                         </tr>
                     </thead>
                     <tbody id="completedServicesTableBody">
@@ -382,6 +383,11 @@
                             <td>2024-03-20</td>
                             <td>2 days</td>
                             <td>Plumbing issue resolved. Replaced faulty pipes.</td>
+                            <td>
+                                <button class="view-btn" onclick="viewCompletedRequestDetails(SR-001)">
+                                    <i class='bx bx-show'></i> View
+                                </button>
+                            </td>
                         </tr>
                         <tr>
                             <td>#SR-002</td>
@@ -389,6 +395,11 @@
                             <td>2024-03-18</td>
                             <td>1 day</td>
                             <td>Security camera system repaired and tested.</td>
+                            <td>
+                                <button class="view-btn" onclick="viewCompletedRequestDetails(SR-002)">
+                                    <i class='bx bx-show'></i> View
+                                </button>
+                            </td>
                         </tr>
                         <tr>
                             <td>#SR-003</td>
@@ -396,6 +407,11 @@
                             <td>2024-03-15</td>
                             <td>3 days</td>
                             <td>Garden maintenance completed. Trees trimmed.</td>
+                            <td>
+                                <button class="view-btn" onclick="viewCompletedRequestDetails(SR-003)">
+                                    <i class='bx bx-show'></i> View
+                                </button>
+                            </td>
                         </tr>
                         <tr>
                             <td>#SR-004</td>
@@ -403,6 +419,11 @@
                             <td>2024-03-10</td>
                             <td>5 days</td>
                             <td>Clubhouse cleaning and maintenance completed.</td>
+                            <td>
+                                <button class="view-btn" onclick="viewCompletedRequestDetails(SR-004)">
+                                    <i class='bx bx-show'></i> View
+                                </button>
+                            </td>
                         </tr>
                     </tbody>
                 </table>
@@ -539,14 +560,17 @@
         const itemsPerPage = 5;
         let filteredRequests = [...sampleRequests];
 
-        // Initialize table with data from server
         async function initializeTable() {
             try {
                 const response = await fetch('/Home/GetServiceRequests');
                 const result = await response.json();
                 
                 if (result.success) {
-                    filteredRequests = result.data;
+                    // Filter out completed and rejected requests
+                    filteredRequests = result.data.filter(request => 
+                        request.status.toLowerCase() !== 'completed' && 
+                        request.status.toLowerCase() !== 'rejected'
+                    );
                     updateTable();
                     updatePagination();
                 } else {
@@ -566,6 +590,13 @@
             const tableBody = document.getElementById('requestsTableBody');
             tableBody.innerHTML = '';
 
+            if (currentPageData.length === 0) {
+                const emptyRow = document.createElement('tr');
+                emptyRow.innerHTML = '<td colspan="5" class="text-center">No active service requests found</td>';
+                tableBody.appendChild(emptyRow);
+                return;
+            }
+
             currentPageData.forEach(request => {
                 const row = document.createElement('tr');
                 row.innerHTML = `
@@ -574,7 +605,7 @@
                     <td><span class="status ${request.status.toLowerCase()}">${request.status}</span></td>
                     <td>${new Date(request.dateSubmitted).toLocaleDateString()}</td>
                     <td>
-                        <button class="view-btn" onclick="viewRequestDetails('${request.id}')">
+                        <button class="view-btn" onclick="viewActiveRequestDetails(${request.id})">
                             <i class='bx bx-show'></i> View
                         </button>
                     </td>
@@ -583,12 +614,66 @@
             });
         }
 
+        function viewActiveRequestDetails(requestId) {
+            const request = filteredRequests.find(r => r.id === requestId);
+            if (!request) return;
+
+            const modal = document.createElement('div');
+            modal.className = 'modal';
+            modal.innerHTML = `
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h2>Request Details</h2>
+                        <span class="close-btn" onclick="this.parentElement.parentElement.parentElement.remove()">&times;</span>
+                    </div>
+                    <div class="modal-body">
+                        <div class="request-details">
+                            <div class="detail-row">
+                                <span class="detail-label">Request ID:</span>
+                                <span class="detail-value">#${request.id}</span>
+                            </div>
+                            <div class="detail-row">
+                                <span class="detail-label">Service Type:</span>
+                                <span class="detail-value">${request.serviceType}</span>
+                            </div>
+                            <div class="detail-row">
+                                <span class="detail-label">Status:</span>
+                                <span class="detail-value status ${request.status.toLowerCase()}">${request.status}</span>
+                            </div>
+                            <div class="detail-row">
+                                <span class="detail-label">Priority:</span>
+                                <span class="detail-value priority ${request.priority.toLowerCase()}">${request.priority}</span>
+                            </div>
+                            <div class="detail-row">
+                                <span class="detail-label">Date Submitted:</span>
+                                <span class="detail-value">${new Date(request.dateSubmitted).toLocaleDateString()}</span>
+                            </div>
+                            <div class="detail-row full-width">
+                                <span class="detail-label">Description:</span>
+                                <div class="detail-value description">${request.description}</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+            document.body.appendChild(modal);
+            modal.style.display = 'block';
+
+            // Close modal when clicking outside
+            modal.addEventListener('click', function(event) {
+                if (event.target === modal) {
+                    modal.remove();
+                }
+            });
+        }
+
         // FILTER SEARCH 
         function filterRequests() {
             const searchText = document.getElementById('searchInput').value.toLowerCase();
+            const originalRequests = [...filteredRequests];
 
-            filteredRequests = sampleRequests.filter(request => {
-                return request.id.toLowerCase().includes(searchText) ||
+            filteredRequests = originalRequests.filter(request => {
+                return request.id.toString().toLowerCase().includes(searchText) ||
                        request.serviceType.toLowerCase().includes(searchText) ||
                        request.status.toLowerCase().includes(searchText);
             });
@@ -628,53 +713,41 @@
             document.getElementById('newRequestModal').style.display = 'none';
         }
 
-        function viewRequestDetails(requestId) {
-            const request = sampleRequests.find(r => r.id === requestId);
-            if (!request) return;
+        // Handle request status updates
+        async function updateRequestStatus(requestId, newStatus) {
+            try {
+                const response = await fetch('/Home/UpdateRequestStatus', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        requestId: requestId,
+                        status: newStatus
+                    })
+                });
 
-            const modal = document.createElement('div');
-            modal.className = 'modal';
-            modal.innerHTML = `
-                <div class="modal-content">
-                    <div class="modal-header">
-                        <h2>Request Details</h2>
-                        <span class="close-btn" onclick="this.parentElement.parentElement.parentElement.remove()">&times;</span>
-                    </div>
-                    <div class="modal-body">
-                        <div class="request-details">
-                            <div class="detail-row">
-                                <span class="detail-label">Request ID:</span>
-                                <span class="detail-value">#${request.id}</span>
-                            </div>
-                            <div class="detail-row">
-                                <span class="detail-label">Service Type:</span>
-                                <span class="detail-value">${request.serviceType}</span>
-                            </div>
-                            <div class="detail-row">
-                                <span class="detail-label">Status:</span>
-                                <span class="detail-value status ${request.status}">${request.status}</span>
-                            </div>
-                            <div class="detail-row">
-                                <span class="detail-label">Priority:</span>
-                                <span class="detail-value priority ${request.priority.toLowerCase()}">${request.priority}</span>
-                            </div>
-                            <div class="detail-row">
-                                <span class="detail-label">Date Submitted:</span>
-                                <span class="detail-value">${request.dateSubmitted}</span>
-                            </div>
-                            <div class="detail-row full-width">
-                                <span class="detail-label">Description:</span>
-                                <div class="detail-value description">${request.description}</div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            `;
-            document.body.appendChild(modal);
-            modal.style.display = 'block';
+                const result = await response.json();
+                if (result.success) {
+                    // Remove the request from active requests if completed or rejected
+                    if (newStatus.toLowerCase() === 'completed' || newStatus.toLowerCase() === 'rejected') {
+                        filteredRequests = filteredRequests.filter(req => req.id !== requestId);
+                        updateTable();
+                        updatePagination();
+                        
+                        // Refresh completed requests table
+                        await initializeCompletedTable();
+                    }
+                    showNotification(`Request ${newStatus} successfully!`, 'success');
+                } else {
+                    showNotification(result.message, 'error');
+                }
+            } catch (error) {
+                showNotification('Error updating request status: ' + error.message, 'error');
+            }
         }
 
-        // NOTFI
+        // NOTIFICATION FUNCTION
         function showNotification(message, type = 'info') {
             const notification = document.createElement('div');
             notification.className = `notification-message ${type}`;
@@ -709,7 +782,8 @@
             }, 3000);
         }
 
-        document.getElementById('serviceRequestForm').addEventListener('submit', function(e) {
+        // SERVICE REQUEST FORM SUBMISSION
+        document.getElementById('serviceRequestForm').addEventListener('submit', async function(e) {
             e.preventDefault();
             
             const serviceType = document.getElementById('serviceType').value;
@@ -731,78 +805,57 @@
                 return;
             }
             
-            // Create service request object
-            const serviceRequest = {
-                serviceType: serviceType,
-                description: description,
-                priority: priority
-            };
+            try {
+                // Create service request object
+                const serviceRequest = {
+                    serviceType: serviceType,
+                    description: description,
+                    priority: priority
+                };
 
-            // Send request to server
-            fetch('/Home/SubmitServiceRequest', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify(serviceRequest)
-            })
-            .then(response => response.json())
-            .then(data => {
+                // Send request to server
+                const response = await fetch('/Home/SubmitServiceRequest', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(serviceRequest)
+                });
+
+                const data = await response.json();
                 if (data.success) {
                     showNotification('Service request submitted successfully!', 'success');
                     closeNewRequestModal();
                     // Refresh the table to show new request
-                    initializeTable();
+                    await initializeTable();
                 } else {
                     showNotification(data.message, 'error');
                 }
-            })
-            .catch(error => {
+            } catch (error) {
                 showNotification('Error submitting request: ' + error.message, 'error');
-            });
+            }
         });
-
-        document.addEventListener('DOMContentLoaded', initializeTable);
-
-        document.getElementById('searchInput').addEventListener('keyup', filterRequests);
 
         // COMPLETED SERVICES TABLE
         let currentCompletedPage = 1;
         const completedItemsPerPage = 5;
-        let filteredCompletedServices = [
-            {
-                id: 'SR-001',
-                serviceType: 'Maintenance',
-                dateCompleted: '2024-03-20',
-                completionTime: '2 days',
-                staffNotes: 'Plumbing issue resolved. Replaced faulty pipes.'
-            },
-            {
-                id: 'SR-002',
-                serviceType: 'Security',
-                dateCompleted: '2024-03-18',
-                completionTime: '1 day',
-                staffNotes: 'Security camera system repaired and tested.'
-            },
-            {
-                id: 'SR-003',
-                serviceType: 'Landscaping',
-                dateCompleted: '2024-03-15',
-                completionTime: '3 days',
-                staffNotes: 'Garden maintenance completed. Trees trimmed.'
-            },
-            {
-                id: 'SR-004',
-                serviceType: 'Facility',
-                dateCompleted: '2024-03-10',
-                completionTime: '5 days',
-                staffNotes: 'Clubhouse cleaning and maintenance completed.'
-            }
-        ];
+        let filteredCompletedServices = [];
 
-        function initializeCompletedTable() {
-            updateCompletedTable();
-            updateCompletedPagination();
+        async function initializeCompletedTable() {
+            try {
+                const response = await fetch('/Home/GetCompletedRequests');
+                const result = await response.json();
+                
+                if (result.success) {
+                    filteredCompletedServices = result.data;
+                    updateCompletedTable();
+                    updateCompletedPagination();
+                } else {
+                    showNotification(result.message, 'error');
+                }
+            } catch (error) {
+                showNotification('Error loading completed requests: ' + error.message, 'error');
+            }
         }
 
         function updateCompletedTable() {
@@ -813,26 +866,47 @@
             const tableBody = document.getElementById('completedServicesTableBody');
             tableBody.innerHTML = '';
 
+            if (currentPageData.length === 0) {
+                const emptyRow = document.createElement('tr');
+                emptyRow.innerHTML = '<td colspan="5" class="text-center">No completed service requests found</td>';
+                tableBody.appendChild(emptyRow);
+                return;
+            }
+
             currentPageData.forEach(service => {
                 const row = document.createElement('tr');
                 row.innerHTML = `
                     <td>#${service.id}</td>
                     <td><span class="service-type ${service.serviceType.toLowerCase()}">${service.serviceType}</span></td>
-                    <td>${service.dateCompleted}</td>
-                    <td>${service.completionTime}</td>
-                    <td>${service.staffNotes}</td>
+                    <td>${new Date(service.dateSubmitted).toLocaleDateString()}</td>
+                    <td>${calculateCompletionTime(service.dateSubmitted)}</td>
+                    <td>${service.staffNotes || 'No notes available'}</td>
+                    <td>
+                        <button class="view-btn" onclick="viewCompletedRequestDetails(${service.id})">
+                            <i class='bx bx-show'></i> View
+                        </button>
+                    </td>
                 `;
                 tableBody.appendChild(row);
             });
         }
 
+        function calculateCompletionTime(dateSubmitted) {
+            const submittedDate = new Date(dateSubmitted);
+            const completedDate = new Date();
+            const diffTime = Math.abs(completedDate - submittedDate);
+            const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+            return `${diffDays} day${diffDays !== 1 ? 's' : ''}`;
+        }
+
         function filterCompletedServices() {
             const searchText = document.getElementById('completedSearchInput').value.toLowerCase();
 
-            filteredCompletedServices = filteredCompletedServices.filter(service => {
-                return service.id.toLowerCase().includes(searchText) ||
+            const originalServices = [...filteredCompletedServices];
+            filteredCompletedServices = originalServices.filter(service => {
+                return service.id.toString().toLowerCase().includes(searchText) ||
                        service.serviceType.toLowerCase().includes(searchText) ||
-                       service.staffNotes.toLowerCase().includes(searchText);
+                       (service.staffNotes && service.staffNotes.toLowerCase().includes(searchText));
             });
 
             currentCompletedPage = 1;
@@ -858,9 +932,68 @@
             }
         }
 
+        function viewCompletedRequestDetails(requestId) {
+            const request = filteredCompletedServices.find(r => r.id === requestId);
+            if (!request) return;
+
+            const modal = document.createElement('div');
+            modal.className = 'modal';
+            modal.innerHTML = `
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h2>Completed Request Details</h2>
+                        <span class="close-btn" onclick="this.parentElement.parentElement.parentElement.remove()">&times;</span>
+                    </div>
+                    <div class="modal-body">
+                        <div class="request-details">
+                            <div class="detail-row">
+                                <span class="detail-label">Request ID:</span>
+                                <span class="detail-value">#${request.id}</span>
+                            </div>
+                            <div class="detail-row">
+                                <span class="detail-label">Service Type:</span>
+                                <span class="detail-value">${request.serviceType}</span>
+                            </div>
+                            <div class="detail-row">
+                                <span class="detail-label">Priority:</span>
+                                <span class="detail-value priority ${request.priority.toLowerCase()}">${request.priority}</span>
+                            </div>
+                            <div class="detail-row">
+                                <span class="detail-label">Date Submitted:</span>
+                                <span class="detail-value">${new Date(request.dateSubmitted).toLocaleDateString()}</span>
+                            </div>
+                            <div class="detail-row">
+                                <span class="detail-label">Completion Time:</span>
+                                <span class="detail-value">${calculateCompletionTime(request.dateSubmitted)}</span>
+                            </div>
+                            <div class="detail-row full-width">
+                                <span class="detail-label">Description:</span>
+                                <div class="detail-value description">${request.description}</div>
+                            </div>
+                            <div class="detail-row full-width">
+                                <span class="detail-label">Staff Notes:</span>
+                                <div class="detail-value description">${request.staffNotes || 'No notes available'}</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+            document.body.appendChild(modal);
+            modal.style.display = 'block';
+
+            // Close modal when clicking outside
+            modal.addEventListener('click', function(event) {
+                if (event.target === modal) {
+                    modal.remove();
+                }
+            });
+        }
+
+        // Initialize event listeners
         document.addEventListener('DOMContentLoaded', function() {
             initializeTable();
             initializeCompletedTable();
+            document.getElementById('searchInput').addEventListener('keyup', filterRequests);
             document.getElementById('completedSearchInput').addEventListener('keyup', filterCompletedServices);
         });
     </script>

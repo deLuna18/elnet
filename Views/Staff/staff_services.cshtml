@@ -680,13 +680,11 @@
             `;
 
             modal.style.display = 'block';
-            // Add close event
             document.getElementById('closeRequestDetailsBtn').onclick = function() {
                 modal.style.display = 'none';
             };
         }
 
-        // Close modals
         function closeModal(modalId) {
             const modal = document.getElementById(modalId);
             if (modal) {
@@ -694,14 +692,15 @@
             }
         }
 
-        // Initialize table with data
         async function initializeTable() {
             try {
                 const response = await fetch('/Staff/GetServiceRequests');
                 const result = await response.json();
                 
                 if (result.success) {
-                    filteredRequests = result.data;
+                    filteredRequests = result.data.filter(request => 
+                        request.status !== 'Completed' && request.status !== 'Rejected'
+                    );
                     updateTable();
                     updatePagination();
                     updateQuickStats();
@@ -893,8 +892,22 @@
                 const result = await response.json();
                 if (result.success) {
                     showNotification(`Request ${newStatus} successfully!`, 'success');
-                    await initializeTable(); // Refresh the main table
-                    await loadCompletedRequests(); // Refresh completed requests
+                    
+                    // Remove the request from filteredRequests if completed or rejected
+                    if (newStatus === 'Completed' || newStatus === 'Rejected') {
+                        filteredRequests = filteredRequests.filter(req => req.id !== parseInt(requestId));
+                    } else {
+                        // Update the status in the current list
+                        const request = filteredRequests.find(req => req.id === parseInt(requestId));
+                        if (request) {
+                            request.status = newStatus;
+                        }
+                    }
+                    
+                    // Refresh the tables
+                    updateTable();
+                    await loadCompletedRequests();
+                    updateQuickStats();
                 } else {
                     showNotification(result.message, 'error');
                 }
