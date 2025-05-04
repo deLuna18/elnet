@@ -363,11 +363,123 @@ namespace SubdivisionManagement.Controllers
 
             return View("staff_community_forum");
         }
+
+        [HttpGet]
+        public IActionResult GetAssignedRequests()
+        {
+            var username = HttpContext.Session.GetString("StaffUser");
+            var staff = _context.Staffs.FirstOrDefault(s => s.Username == username);
+            if (staff == null) return Unauthorized();
+
+            var requests = _context.Services
+                .Where(s => s.AssignedStaffId == staff.Id)
+                .Include(s => s.Homeowner)
+                .ToList();
+            return Json(requests);
+        }
+
+        [HttpGet]
+        public IActionResult GetServiceRequests()
+        {
+            try
+            {
+                var requests = _context.Services
+                    .Include(s => s.Homeowner)
+                    .OrderByDescending(s => s.DateSubmitted)
+                    .ToList();
+
+                return Json(new { success = true, data = requests });
+            }
+            catch (Exception ex)
+            {
+                return Json(new { success = false, message = ex.Message });
+            }
+        }
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> UpdateRequestStatus([FromBody] UpdateRequestStatusModel model)
+        {
+            try
+            {
+                // Validate the request
+                if (model == null || model.RequestId <= 0)
+                {
+                    return Json(new { success = false, message = "Invalid request data" });
+                }
+
+                // Get the current staff user
+                var username = HttpContext.Session.GetString("StaffUser");
+                var staff = _context.Staffs.FirstOrDefault(s => s.Username == username);
+                
+                if (staff == null)
+                {
+                    return Json(new { success = false, message = "Staff not found" });
+                }
+
+                // Find the service request
+                var request = await _context.Services
+                    .Include(s => s.Homeowner)
+                    .FirstOrDefaultAsync(s => s.Id == model.RequestId);
+
+                if (request == null)
+                {
+                    return Json(new { success = false, message = "Service request not found" });
+                }
+
+                // Update the request status
+                request.Status = model.Status;
+                if (!string.IsNullOrEmpty(model.StaffNotes))
+                {
+                    request.StaffNotes = model.StaffNotes;
+                }
+
+                // If the request is being accepted, assign it to the current staff
+                if (model.Status == "Accepted")
+                {
+                    request.AssignedStaffId = staff.Id;
+                }
+
+                await _context.SaveChangesAsync();
+
+                return Json(new { success = true, message = $"Request status updated to {model.Status}" });
+            }
+            catch (Exception ex)
+            {
+                return Json(new { success = false, message = $"Error updating request status: {ex.Message}" });
+            }
+        }
+
+        [HttpGet]
+        public IActionResult GetCompletedRequests()
+        {
+            try
+            {
+                var completedRequests = _context.Services
+                    .Include(s => s.Homeowner)
+                    .Where(s => s.Status == "Completed")
+                    .OrderByDescending(s => s.DateSubmitted)
+                    .ToList();
+
+                return Json(new { success = true, data = completedRequests });
+            }
+            catch (Exception ex)
+            {
+                return Json(new { success = false, message = ex.Message });
+            }
+        }
     }
 
     public class UpdateStatusModel
     {
         public int HomeownerId { get; set; }
         public string NewStatus { get; set; } = string.Empty;
+    }
+
+    public class UpdateRequestStatusModel
+    {
+        public int RequestId { get; set; }
+        public string Status { get; set; } = string.Empty;
+        public string? StaffNotes { get; set; }
     }
 }

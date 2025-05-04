@@ -181,4 +181,67 @@ public class HomeController : Controller
         HttpContext.Session.Clear();
         return RedirectToAction("Index");
     }
+
+    [HttpGet]
+    public IActionResult GetMyRequests()
+    {
+        int? userId = HttpContext.Session.GetInt32("UserId");
+        if (userId == null) return Unauthorized();
+
+        var requests = _context.Services
+            .Where(s => s.HomeownerId == userId)
+            .Include(s => s.AssignedStaff)
+            .ToList();
+        return Json(requests);
+    }
+
+    [HttpPost]
+    public async Task<IActionResult> SubmitServiceRequest([FromBody] Services serviceRequest)
+    {
+        try
+        {
+            int? userId = HttpContext.Session.GetInt32("UserId");
+            if (userId == null)
+            {
+                return Json(new { success = false, message = "User not logged in" });
+            }
+
+            serviceRequest.HomeownerId = userId.Value;
+            serviceRequest.DateSubmitted = DateTime.Now;
+            serviceRequest.Status = "Pending";
+
+            _context.Services.Add(serviceRequest);
+            await _context.SaveChangesAsync();
+
+            return Json(new { success = true, message = "Service request submitted successfully" });
+        }
+        catch (Exception ex)
+        {
+            return Json(new { success = false, message = "Error submitting service request: " + ex.Message });
+        }
+    }
+
+    [HttpGet]
+    public async Task<IActionResult> GetServiceRequests()
+    {
+        try
+        {
+            int? userId = HttpContext.Session.GetInt32("UserId");
+            if (userId == null)
+            {
+                return Json(new { success = false, message = "User not logged in" });
+            }
+
+            var requests = await _context.Services
+                .Where(s => s.HomeownerId == userId)
+                .OrderByDescending(s => s.DateSubmitted)
+                .ToListAsync();
+
+            return Json(new { success = true, data = requests });
+        }
+        catch (Exception ex)
+        {
+            return Json(new { success = false, message = "Error fetching service requests: " + ex.Message });
+        }
+    }
 }

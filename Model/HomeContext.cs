@@ -10,6 +10,7 @@ namespace SubdivisionManagement.Model
         public DbSet<Admin> Admins { get; set; }
         public DbSet<Staff> Staffs { get; set; }  
         public DbSet<Announcement> Announcements { get; set; }
+        public DbSet<Services> Services { get; set; }
     }
 }
 

@@ -3,6 +3,7 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using SubdivisionManagement.Model;
 
@@ -11,9 +12,11 @@ using SubdivisionManagement.Model;
 namespace SubdivisionManagement.Migrations
 {
     [DbContext(typeof(HomeContext))]
-    partial class HomeContextModelSnapshot : ModelSnapshot
+    [Migration("20250427175910_New")]
+    partial class New
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -148,51 +151,6 @@ namespace SubdivisionManagement.Migrations
                     b.ToTable("Homeowners");
                 });
 
-            modelBuilder.Entity("SubdivisionManagement.Model.Services", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
-
-                    b.Property<int?>("AssignedStaffId")
-                        .HasColumnType("int");
-
-                    b.Property<DateTime>("DateSubmitted")
-                        .HasColumnType("datetime2");
-
-                    b.Property<string>("Description")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<int?>("HomeownerId")
-                        .HasColumnType("int");
-
-                    b.Property<string>("Priority")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("ServiceType")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("StaffNotes")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("Status")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("AssignedStaffId");
-
-                    b.HasIndex("HomeownerId");
-
-                    b.ToTable("Services");
-                });
-
             modelBuilder.Entity("SubdivisionManagement.Model.Staff", b =>
                 {
                     b.Property<int>("Id")
@@ -258,21 +216,6 @@ namespace SubdivisionManagement.Migrations
                         .HasForeignKey("StaffId");
 
                     b.Navigation("Staff");
-                });
-
-            modelBuilder.Entity("SubdivisionManagement.Model.Services", b =>
-                {
-                    b.HasOne("SubdivisionManagement.Model.Staff", "AssignedStaff")
-                        .WithMany()
-                        .HasForeignKey("AssignedStaffId");
-
-                    b.HasOne("SubdivisionManagement.Model.Homeowner", "Homeowner")
-                        .WithMany()
-                        .HasForeignKey("HomeownerId");
-
-                    b.Navigation("AssignedStaff");
-
-                    b.Navigation("Homeowner");
                 });
 #pragma warning restore 612, 618
         }

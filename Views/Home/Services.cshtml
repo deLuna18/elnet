@@ -539,13 +539,25 @@
         const itemsPerPage = 5;
         let filteredRequests = [...sampleRequests];
 
-        // TALBE
-        function initializeTable() {
-            updateTable();
-            updatePagination();
+        // Initialize table with data from server
+        async function initializeTable() {
+            try {
+                const response = await fetch('/Home/GetServiceRequests');
+                const result = await response.json();
+                
+                if (result.success) {
+                    filteredRequests = result.data;
+                    updateTable();
+                    updatePagination();
+                } else {
+                    showNotification(result.message, 'error');
+                }
+            } catch (error) {
+                showNotification('Error loading service requests: ' + error.message, 'error');
+            }
         }
 
-        // UPDATE TABLE
+        // Update table with fetched data
         function updateTable() {
             const startIndex = (currentPage - 1) * itemsPerPage;
             const endIndex = startIndex + itemsPerPage;
@@ -559,8 +571,8 @@
                 row.innerHTML = `
                     <td>#${request.id}</td>
                     <td>${request.serviceType}</td>
-                    <td><span class="status ${request.status}">${request.status}</span></td>
-                    <td>${request.dateSubmitted}</td>
+                    <td><span class="status ${request.status.toLowerCase()}">${request.status}</span></td>
+                    <td>${new Date(request.dateSubmitted).toLocaleDateString()}</td>
                     <td>
                         <button class="view-btn" onclick="viewRequestDetails('${request.id}')">
                             <i class='bx bx-show'></i> View
@@ -719,22 +731,35 @@
                 return;
             }
             
-            const newRequest = {
-                id: `SR-${Math.floor(Math.random() * 1000).toString().padStart(3, '0')}`,
+            // Create service request object
+            const serviceRequest = {
                 serviceType: serviceType,
-                status: 'pending',
-                dateSubmitted: new Date().toISOString().split('T')[0],
                 description: description,
                 priority: priority
             };
-            
-            sampleRequests.unshift(newRequest);
-            filteredRequests = [...sampleRequests];
-            
-            showNotification('Service request submitted successfully!', 'success');
-            closeNewRequestModal();
-            updateTable();
-            updatePagination();
+
+            // Send request to server
+            fetch('/Home/SubmitServiceRequest', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(serviceRequest)
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    showNotification('Service request submitted successfully!', 'success');
+                    closeNewRequestModal();
+                    // Refresh the table to show new request
+                    initializeTable();
+                } else {
+                    showNotification(data.message, 'error');
+                }
+            })
+            .catch(error => {
+                showNotification('Error submitting request: ' + error.message, 'error');
+            });
         });
 
         document.addEventListener('DOMContentLoaded', initializeTable);

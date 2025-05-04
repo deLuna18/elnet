@@ -5,6 +5,7 @@ using System.Linq;
 using Microsoft.AspNetCore.Cryptography.KeyDerivation;
 using System;
 using System.Text;
+using Microsoft.EntityFrameworkCore;
 
 
 public class AdminController : Controller
@@ -101,9 +102,63 @@ public class AdminController : Controller
 
         return Json(new { message = "Staff successfully registered." });
     }
-
-
-
-
         
+    public IActionResult Services()
+    {
+        if (HttpContext.Session.GetString("AdminUser") == null)
+        {
+            return RedirectToAction("Login");
+        }
+        return View("admin_services");  
+    }
+
+    // Get all service requests (for admin)
+    [HttpGet]
+    public IActionResult GetAllServiceRequests()
+    {
+        var requests = _context.Services
+            .Include(s => s.Homeowner)
+            .Include(s => s.AssignedStaff)
+            .ToList();
+        return Json(requests);
+    }
+
+    // Assign staff to a request
+    [HttpPost]
+    public IActionResult AssignStaff([FromBody] AssignStaffModel model)
+    {
+        var request = _context.Services.FirstOrDefault(s => s.Id == model.RequestId);
+        if (request == null) return NotFound();
+
+        request.AssignedStaffId = model.StaffId;
+        request.Status = "in-progress";
+        _context.SaveChanges();
+
+        return Ok();
+    }
+
+    // Update status
+    [HttpPost]
+    public IActionResult UpdateRequestStatus([FromBody] UpdateStatusModel model)
+    {
+        var request = _context.Services.FirstOrDefault(s => s.Id == model.RequestId);
+        if (request == null) return NotFound();
+
+        request.Status = model.Status;
+        _context.SaveChanges();
+
+        return Ok();
+    }
+
+    public class AssignStaffModel
+    {
+        public int RequestId { get; set; }
+        public int StaffId { get; set; }
+    }
+
+    public class UpdateStatusModel
+    {
+        public int RequestId { get; set; }
+        public string Status { get; set; }
+    }
 }
