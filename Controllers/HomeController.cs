@@ -278,4 +278,49 @@ public class HomeController : Controller
         HttpContext.Session.Clear();
         return RedirectToAction("Index");
     }
+
+    [HttpPost]
+    public async Task<IActionResult> SubmitRequest([FromForm] ContactRequest request)
+    {
+        try
+        {
+            var userId = GetLoggedInUserId();
+            if (userId == null) return Unauthorized();
+
+            request.HomeownerId = userId.Value;
+            request.DateSubmitted = DateTime.UtcNow;
+            request.Status = "Pending";
+
+            _context.ContactRequests.Add(request);
+            await _context.SaveChangesAsync();
+
+            return Ok(new { success = true, message = "Request submitted successfully" });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error submitting contact request");
+            return BadRequest(new { success = false, message = "Error submitting request. Please try again." });
+        }
+    }
+
+    [HttpGet]
+    public async Task<IActionResult> GetRequestHistory()
+    {
+        var userId = GetLoggedInUserId();
+        if (userId == null) return Unauthorized();
+
+        var requests = await _context.ContactRequests
+            .Where(r => r.HomeownerId == userId.Value)
+            .OrderByDescending(r => r.DateSubmitted)
+            .Select(r => new
+            {
+                r.DateSubmitted,
+                r.QueryType,
+                r.Message,
+                r.Status
+            })
+            .ToListAsync();
+        
+        return Json(requests);
+    }
 }

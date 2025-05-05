@@ -108,24 +108,55 @@
             <div class="left">
                 <h1>Contact Us</h1>
             </div>
-            <a href="#" class="btn-download"><i class='bxs-message-alt-box'></i> <span class="text">View Requests</span></a>
+            <button type="button" class="btn btn-download" data-bs-toggle="modal" data-bs-target="#requestsModal">
+                <i class='bxs-message-alt-box'></i> <span class="text">View Requests</span>
+            </button>
+        </div>
+
+        <!-- Requests Modal -->
+        <div class="modal fade" id="requestsModal" tabindex="-1" aria-labelledby="requestsModalLabel" aria-hidden="true">
+            <div class="modal-dialog modal-lg">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title" id="requestsModalLabel">My Request History</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                    <div class="modal-body">
+                        <div class="table-responsive">
+                            <table class="table">
+                                <thead>
+                                    <tr>
+                                        <th>Date</th>
+                                        <th>Query Type</th>
+                                        <th>Message</th>
+                                        <th>Status</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="requestHistoryTable">
+                                    <!-- Request history will be populated here -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
         </div>
 
         <div class="card p-4 shadow-sm">
-            <form method="post">
+            <form id="contactForm" method="post" asp-controller="Home" asp-action="SubmitRequest">
                 <div class="row mb-4">
                     <div class="col-md-6">
                         <label class="form-label">First Name</label>
-                        <input type="text" class="form-control" placeholder="Enter your first name">
+                        <input type="text" name="FirstName" class="form-control" placeholder="Enter your first name" required>
                     </div>
                     <div class="col-md-6">
                         <label class="form-label">Last Name</label>
-                        <input type="text" class="form-control" placeholder="Enter your last name">
+                        <input type="text" name="LastName" class="form-control" placeholder="Enter your last name" required>
                     </div>
                 </div>
                 <div class="mb-4">
                     <label class="form-label">Email Address</label>
-                    <input type="email" class="form-control" placeholder="Enter your email">
+                    <input type="email" name="Email" class="form-control" placeholder="Enter your email" required>
                 </div>
                 <div class="mb-4">
 					<label class="form-label">Query Type</label>
@@ -190,4 +221,50 @@
 				document.body.classList.remove('dark');
 			}
 		})
+
+		// Handle form submission
+		document.getElementById('contactForm').addEventListener('submit', async function(e) {
+			e.preventDefault();
+			
+			const formData = new FormData(this);
+			try {
+				const response = await fetch('/Home/SubmitRequest', {
+					method: 'POST',
+					body: formData
+				});
+
+				if (response.ok) {
+					alert('Your request has been submitted successfully!');
+					this.reset();
+				} else {
+					alert('There was an error submitting your request. Please try again.');
+				}
+			} catch (error) {
+				console.error('Error:', error);
+				alert('There was an error submitting your request. Please try again.');
+			}
+		});
+
+		// Function to load request history
+		async function loadRequestHistory() {
+			try {
+				const response = await fetch('/Home/GetRequestHistory');
+				const requests = await response.json();
+				
+				const tableBody = document.getElementById('requestHistoryTable');
+				tableBody.innerHTML = requests.map(request => `
+					<tr>
+						<td>${new Date(request.dateSubmitted).toLocaleDateString()}</td>
+						<td>${request.queryType}</td>
+						<td>${request.message}</td>
+						<td><span class="badge bg-${request.status === 'Pending' ? 'warning' : 'success'}">${request.status}</span></td>
+					</tr>
+				`).join('');
+			} catch (error) {
+				console.error('Error loading request history:', error);
+			}
+		}
+
+		// Load request history when modal is opened
+		document.getElementById('requestsModal').addEventListener('show.bs.modal', loadRequestHistory);
 </script>

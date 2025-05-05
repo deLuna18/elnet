@@ -13,6 +13,7 @@ namespace SubdivisionManagement.Model
         public DbSet<ServiceRequest> ServiceRequests { get; set; }
         public DbSet<ContactRequest> ContactRequests { get; set; }
         public DbSet<ServiceCategory> ServiceCategories { get; set; }
+        public DbSet<ContactRequest> ContactRequests { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
