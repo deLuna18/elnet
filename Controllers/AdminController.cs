@@ -8,6 +8,8 @@ using System.Text;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using Microsoft.AspNetCore.Antiforgery;
+using System.Threading.Tasks;
+using System.Collections.Generic;
 
 public class AdminController : Controller
 {
@@ -120,6 +122,17 @@ public class AdminController : Controller
         ViewBag.AntiForgeryToken = tokens.RequestToken;
         return View("admin_services");
     }
+
+    public IActionResult Admin_Contact_And_Support()
+    {
+        if (HttpContext.Session.GetString("AdminUser") == null)
+        {
+            return RedirectToAction("Login");
+        }
+
+        return View("admin_contact_and_support");
+    }
+
 
     [HttpGet]
     public async Task<IActionResult> GetServiceCategories()
@@ -405,4 +418,11 @@ public class AdminController : Controller
         public string Phone { get; set; } = string.Empty;
         public string Specialization { get; set; } = string.Empty;
     }
+}
+
+public class RespondToRequestModel
+{
+    public int RequestId { get; set; }
+    public required string Status { get; set; }
+    public required string Response { get; set; }
 }

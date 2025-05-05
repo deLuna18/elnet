@@ -5,6 +5,7 @@
 <head>
     <link href='https://unpkg.com/boxicons@2.0.9/css/boxicons.min.css' rel='stylesheet'>
     <link rel="stylesheet" href="~/css/staff_contact_and_support.css" asp-append-version="true">
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <title>Staff Contact Support Management</title>
 </head>
 
@@ -204,7 +205,8 @@
                             <th>Actions</th>
                         </tr>
                     </thead>
-                    <tbody>
+
+                    <tbody id="requestsTable">
                         @foreach (var request in Model)
                         {
                             <tr>
@@ -243,6 +245,83 @@
                             </tr>
                         }
                     </tbody>
+                    
+                    <!-- Add this script at the bottom -->
+                    <script>
+                        async function loadRequests() {
+                            const response = await fetch('/Staff/GetContactRequests');
+                            const requests = await response.json();
+                            updateTable(requests);
+                        }
+                    
+                        function updateTable(requests) {
+                            const tbody = document.getElementById('requestsTable');
+                            tbody.innerHTML = requests.map(request => `
+                                <tr>
+                                    <td>${new Date(request.dateSubmitted).toLocaleDateString()}</td>
+                                    <td>${request.queryType}</td>
+                                    <td>${request.message}</td>
+                                    <td>
+                                        <select class="form-select status-select" onchange="updateStatus(${request.id}, this.value)">
+                                            <option value="Pending" ${request.status === 'Pending' ? 'selected' : ''}>Pending</option>
+                                            <option value="In Progress" ${request.status === 'In Progress' ? 'selected' : ''}>In Progress</option>
+                                            <option value="Resolved" ${request.status === 'Resolved' ? 'selected' : ''}>Resolved</option>
+                                        </select>
+                                    </td>
+                                    <td>
+                                        <button class="btn btn-primary btn-sm" onclick="addNote(${request.id})">Add Note</button>
+                                    </td>
+                                </tr>
+                            `).join('');
+                        }
+                    
+                        async function updateStatus(id, status) {
+                            try {
+                                const response = await fetch('/Staff/UpdateContactRequest', {
+                                    method: 'POST',
+                                    headers: {
+                                        'Content-Type': 'application/json',
+                                    },
+                                    body: JSON.stringify({ id, status })
+                                });
+                                if (response.ok) {
+                                    Swal.fire('Success', 'Status updated successfully', 'success');
+                                    loadRequests();
+                                }
+                            } catch (error) {
+                                Swal.fire('Error', 'Failed to update status', 'error');
+                            }
+                        }
+                    
+                        async function addNote(id) {
+                            const { value: note } = await Swal.fire({
+                                title: 'Add Staff Note',
+                                input: 'textarea',
+                                showCancelButton: true
+                            });
+                    
+                            if (note) {
+                                try {
+                                    const response = await fetch('/Staff/UpdateContactRequest', {
+                                        method: 'POST',
+                                        headers: {
+                                            'Content-Type': 'application/json',
+                                        },
+                                        body: JSON.stringify({ id, staffNotes: note })
+                                    });
+                                    if (response.ok) {
+                                        Swal.fire('Success', 'Note added successfully', 'success');
+                                        loadRequests();
+                                    }
+                                } catch (error) {
+                                    Swal.fire('Error', 'Failed to add note', 'error');
+                                }
+                            }
+                        }
+                    
+                        // Load requests when page loads
+                        document.addEventListener('DOMContentLoaded', loadRequests);
+                    </script>
                 </table>
             </div>
         </div>

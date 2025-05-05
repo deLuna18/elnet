@@ -82,6 +82,9 @@ public class HomeController : Controller
 
     public IActionResult Contact()
     {
+        if (!IsUserLoggedIn()) return RedirectToAction("Index");
+        var tokens = _antiforgery.GetAndStoreTokens(HttpContext);
+        ViewBag.AntiForgeryToken = tokens.RequestToken;
         return View();
     }
 
@@ -247,7 +250,7 @@ public class HomeController : Controller
             }
         });
     }
-
+    
     public class ServiceRequestDto
     {
         [Required] public string ServiceType { get; set; } = string.Empty;
@@ -280,47 +283,65 @@ public class HomeController : Controller
     }
 
     [HttpPost]
+    [ValidateAntiForgeryToken]
     public async Task<IActionResult> SubmitRequest([FromForm] ContactRequest request)
     {
         try
         {
-            var userId = GetLoggedInUserId();
-            if (userId == null) return Unauthorized();
+            var userId = HttpContext.Session.GetInt32("UserId");
+            if (userId == null)
+            {
+                return Json(new { success = false, message = "Please log in to submit a request." });
+            }
 
             request.HomeownerId = userId.Value;
-            request.DateSubmitted = DateTime.UtcNow;
             request.Status = "Pending";
+            request.DateSubmitted = DateTime.UtcNow;
 
             _context.ContactRequests.Add(request);
             await _context.SaveChangesAsync();
 
-            return Ok(new { success = true, message = "Request submitted successfully" });
+            return Json(new { success = true, message = "Request submitted successfully!" });
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error submitting contact request");
-            return BadRequest(new { success = false, message = "Error submitting request. Please try again." });
+            return Json(new { success = false, message = "Failed to submit request. Please try again." });
         }
     }
 
     [HttpGet]
     public async Task<IActionResult> GetRequestHistory()
     {
-        var userId = GetLoggedInUserId();
-        if (userId == null) return Unauthorized();
+        var homeownerId = HttpContext.Session.GetInt32("UserId");
+        if (homeownerId == null)
+        {
+            return Unauthorized("Please log in to view request history.");
+        }
 
-        var requests = await _context.ContactRequests
-            .Where(r => r.HomeownerId == userId.Value)
-            .OrderByDescending(r => r.DateSubmitted)
-            .Select(r => new
-            {
-                r.DateSubmitted,
-                r.QueryType,
-                r.Message,
-                r.Status
-            })
-            .ToListAsync();
-        
-        return Json(requests);
+        try
+        {
+            var requests = await _context.ContactRequests
+                .Where(r => r.HomeownerId == homeownerId.Value)
+                .OrderByDescending(r => r.DateSubmitted)
+                .Select(r => new
+                {
+                    dateSubmitted = r.DateSubmitted,
+                    queryType = r.QueryType,
+                    message = r.Message,
+                    status = r.Status,
+                    staffNotes = r.StaffNotes
+                })
+                .ToListAsync();
+
+            return Json(requests);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error loading contact requests");
+            return BadRequest(new { message = "Error loading request history" });
+        }
     }
+
+    // Remove the ContactRequest class from here
 }

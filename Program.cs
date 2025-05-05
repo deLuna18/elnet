@@ -62,14 +62,28 @@ void SeedDatabase(IServiceProvider services)
     using var scope = services.CreateScope();
     var context = scope.ServiceProvider.GetRequiredService<HomeContext>();
     
-    // Only migrate the database, don't delete it
-    context.Database.Migrate();
-
-    // Only seed admin if none exists
-    if (!context.Admins.Any())
+    try
     {
-        context.Admins.Add(new Admin("admin", HashPassword("password123")));
-        context.SaveChanges();
+        // Ensure database is created
+        context.Database.EnsureCreated();
+        
+        // Apply pending migrations
+        if (context.Database.GetPendingMigrations().Any())
+        {
+            context.Database.Migrate();
+        }
+
+        // Seed admin if none exists
+        if (!context.Admins.Any())
+        {
+            context.Admins.Add(new Admin("admin", HashPassword("password123")));
+            context.SaveChanges();
+        }
+    }
+    catch (Exception ex)
+    {
+        var logger = scope.ServiceProvider.GetRequiredService<ILogger<Program>>();
+        logger.LogError(ex, "An error occurred while migrating or seeding the database.");
     }
 }
 

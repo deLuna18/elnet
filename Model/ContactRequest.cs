@@ -1,3 +1,4 @@
+using System.ComponentModel.DataAnnotations;
 using SubdivisionManagement.Model;
 
 namespace SubdivisionManagement.Model
@@ -6,13 +7,30 @@ namespace SubdivisionManagement.Model
     {
         public int Id { get; set; }
         public int HomeownerId { get; set; }
-        public string FirstName { get; set; }
-        public string LastName { get; set; }
-        public string Email { get; set; }
-        public string QueryType { get; set; }
-        public string Message { get; set; }
+        
+        [Required]
+        public string FirstName { get; set; } = string.Empty;
+        
+        [Required]
+        public string LastName { get; set; } = string.Empty;
+        
+        [Required]
+        [EmailAddress]
+        public string Email { get; set; } = string.Empty;
+        
+        [Required]
+        public string QueryType { get; set; } = string.Empty;
+        
+        [Required]
+        public string Message { get; set; } = string.Empty;
+        
         public DateTime DateSubmitted { get; set; }
-        public string Status { get; set; }
-        public virtual Homeowner Homeowner { get; set; }
+        
+        [Required]
+        public string Status { get; set; } = string.Empty;
+        
+        public virtual Homeowner Homeowner { get; set; } = null!;
+        
+        public string? StaffNotes { get; set; }
     }
 }

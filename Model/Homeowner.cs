@@ -1,4 +1,5 @@
 ﻿using System.ComponentModel.DataAnnotations;
+using System.Collections.Generic;
 
 namespace SubdivisionManagement.Model
 {
@@ -45,5 +46,13 @@ namespace SubdivisionManagement.Model
 
         // New Profile property with default value
         public string Profile { get; set; } = "profile.jpg";
+
+        // Add navigation property for contact requests
+        public virtual ICollection<ContactRequest> ContactRequests { get; set; }
+
+        public Homeowner()
+        {
+            ContactRequests = new List<ContactRequest>();
+        }
     }
 }

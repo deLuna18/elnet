@@ -3,6 +3,7 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using SubdivisionManagement.Model;
 
@@ -11,9 +12,11 @@ using SubdivisionManagement.Model;
 namespace SubdivisionManagement.Migrations
 {
     [DbContext(typeof(HomeContext))]
-    partial class HomeContextModelSnapshot : ModelSnapshot
+    [Migration("20250505190215_AddSupportRequests")]
+    partial class AddSupportRequests
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -97,9 +100,6 @@ namespace SubdivisionManagement.Migrations
                     b.Property<int>("HomeownerId")
                         .HasColumnType("int");
 
-                    b.Property<int?>("HomeownerId1")
-                        .HasColumnType("int");
-
                     b.Property<string>("LastName")
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
@@ -112,9 +112,6 @@ namespace SubdivisionManagement.Migrations
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
-                    b.Property<string>("StaffNotes")
-                        .HasColumnType("nvarchar(max)");
-
                     b.Property<string>("Status")
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
@@ -122,8 +119,6 @@ namespace SubdivisionManagement.Migrations
                     b.HasKey("Id");
 
                     b.HasIndex("HomeownerId");
-
-                    b.HasIndex("HomeownerId1");
 
                     b.ToTable("ContactRequests");
                 });
@@ -423,10 +418,6 @@ namespace SubdivisionManagement.Migrations
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
-                    b.HasOne("SubdivisionManagement.Model.Homeowner", null)
-                        .WithMany("ContactRequests")
-                        .HasForeignKey("HomeownerId1");
-
                     b.Navigation("Homeowner");
                 });
 
@@ -470,11 +461,6 @@ namespace SubdivisionManagement.Migrations
             modelBuilder.Entity("SubdivisionManagement.Model.Admin", b =>
                 {
                     b.Navigation("SupportRequests");
-                });
-
-            modelBuilder.Entity("SubdivisionManagement.Model.Homeowner", b =>
-                {
-                    b.Navigation("ContactRequests");
                 });
 #pragma warning restore 612, 618
         }
